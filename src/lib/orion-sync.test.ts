@@ -248,7 +248,8 @@ test("si falla el upsert del detalle corta la corrida", async () => {
 })
 
 test("cuando las en proceso llenan el cupo no queda lugar para las nuevas", async () => {
-  const enProceso = Array.from({ length: 60 }, (_, i) => fila(i + 100))
+  // 200 = el cupo de una corrida: no queda lugar para las nuevas.
+  const enProceso = Array.from({ length: 200 }, (_, i) => fila(i + 100))
   fetchCotizaciones.mockResolvedValueOnce([fila(1)]).mockResolvedValueOnce(enProceso)
   escenario({
     pendientes: {
@@ -260,7 +261,7 @@ test("cuando las en proceso llenan el cupo no queda lugar para las nuevas", asyn
     new Map(encryptedIds.map((id) => [id, detalle(`vin-${id}`)]))
   )
 
-  await expect(syncOrion()).resolves.toMatchObject({ detalles: 60 })
+  await expect(syncOrion()).resolves.toMatchObject({ detalles: 200 })
   // Una sola tanda de detalles: la de las nuevas no se llego a pedir.
   expect(fetchDetalles).toHaveBeenCalledTimes(1)
 })

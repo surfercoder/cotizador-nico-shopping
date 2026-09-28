@@ -354,7 +354,8 @@ test("el detalle que falla no se lleva puestos a los demas", async () => {
     encryptedIds: ["a", "roto", "vacio", "b"],
   })
 
-  expect([...detalles.keys()]).toEqual(["a", "b"])
+  // El orden de llegada depende del paralelismo; lo que importa es quienes.
+  expect([...detalles.keys()].sort()).toEqual(["a", "b"])
   expect(detalles.get("b")?.vin).toEqual("vin-b")
   // La pagina de detalle se abre una sola vez por corrida, no una por pedido.
   const aperturas = llamadas.filter((llamada) =>
@@ -381,4 +382,38 @@ test("el detalle informa el status aunque no se pueda leer el cuerpo", async () 
   await expect(
     fetchDetalles({ cookie: "c", encryptedIds: ["a"] })
   ).resolves.toEqual(new Map())
+})
+
+test("los detalles se piden de a varios, sin pasarse del tope", async () => {
+  const ids = Array.from({ length: 20 }, (_, i) => `enc-${i}`)
+  let enVuelo = 0
+  let pico = 0
+  mockFetch(async (url, init) => {
+    if (init?.method !== "POST") return new Response("<html></html>")
+    enVuelo += 1
+    pico = Math.max(pico, enVuelo)
+    // Un tick para que los pedidos se solapen de verdad.
+    await new Promise((listo) => setTimeout(listo, 1))
+    enVuelo -= 1
+    return json({ d: { vin: "vin" } })
+  })
+
+  const detalles = await fetchDetalles({ cookie: "c", encryptedIds: ids })
+
+  expect(detalles.size).toBe(20)
+  expect(pico).toBeGreaterThan(1)
+  expect(pico).toBeLessThanOrEqual(6)
+})
+
+test("con menos cotizaciones que el tope no se pide ninguna de mas", async () => {
+  let pedidos = 0
+  mockFetch(async (url, init) => {
+    if (init?.method !== "POST") return new Response("<html></html>")
+    pedidos += 1
+    return json({ d: { vin: "vin" } })
+  })
+
+  await fetchDetalles({ cookie: "c", encryptedIds: ["a", "b"] })
+
+  expect(pedidos).toBe(2)
 })

@@ -41,6 +41,13 @@ const PAGE_SIZE = 200
  * mata la plataforma.
  */
 const TIMEOUT_MS = 30_000
+/**
+ * Cada detalle es un request propio y Orion tarda alrededor de un segundo en
+ * contestarlo: de a uno, ponerse al dia con un dia entero no entra en ninguna
+ * corrida. De a seis entra, y sigue siendo un numero amable para un servidor
+ * ajeno. Si Orion empieza a cortar, bajarlo antes que reintentar mas fuerte.
+ */
+const DETALLES_EN_PARALELO = 6
 
 export type OrionSession = {
   cookie: string
@@ -427,14 +434,24 @@ export async function fetchDetalles({
     headers: { Cookie: cookie },
   })
 
-  for (const encrypted of encryptedIds) {
-    try {
-      detalles.set(encrypted, await fetchDetalle(cookie, encrypted))
-    } catch {
-      // Una cotizacion que Orion no quiere devolver no puede tirar abajo el
-      // resto: se reintenta sola en la proxima corrida, que mira detail null.
+  // Pool simple: cada trabajador toma el siguiente id libre hasta que no queda
+  // ninguno, asi una cotizacion lenta no frena a las demas.
+  let siguiente = 0
+  const trabajador = async () => {
+    while (siguiente < encryptedIds.length) {
+      const encrypted = encryptedIds[siguiente++]
+      try {
+        detalles.set(encrypted, await fetchDetalle(cookie, encrypted))
+      } catch {
+        // Una cotizacion que Orion no quiere devolver no puede tirar abajo el
+        // resto: se reintenta sola en la proxima corrida, que mira detail null.
+      }
     }
   }
+
+  // Los trabajadores que sobran salen en el primer chequeo, no hace falta
+  // contarlos contra la cantidad de ids.
+  await Promise.all(Array.from({ length: DETALLES_EN_PARALELO }, trabajador))
 
   return detalles
 }

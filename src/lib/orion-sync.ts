@@ -127,7 +127,7 @@ export async function syncOrion(): Promise<SyncResult> {
   }
 }
 
-const DETALLES_POR_CORRIDA = 60
+const DETALLES_POR_CORRIDA = 200
 
 /**
  * El detalle (getDetallePedido) de cada cotizacion: VIN, anio y, cuando ya esta
@@ -140,8 +140,10 @@ const DETALLES_POR_CORRIDA = 60
  * que se hace de a tandas: en 20 minutos el cron corre de nuevo y sigue por
  * donde quedo, empezando siempre por lo que vence antes.
  *
- * ponytail: tanda fija y secuencial. Si hace falta ponerse al dia mas rapido,
- * pedir de a varios en paralelo antes que subir el tope.
+ * El tope alcanza para un dia entero de cotizaciones en una sola corrida
+ * (`fetchDetalles` los pide de a varios en paralelo). Es tope de seguridad,
+ * no un filtro: cuando se elijan "mejores candidatas" el recorte va antes,
+ * en que filas se piden, no en cuantas entran.
  */
 async function syncDetalles(
   supabase: ReturnType<typeof createAdminClient>,
