@@ -51,6 +51,27 @@ Los tests viven al lado del archivo que prueban (`*.test.ts` / `*.test.tsx`).
 Los de servidor declaran `@jest-environment node`; el resto corre en jsdom con
 Testing Library.
 
+## Sincronizacion con Orion
+
+El sync corre en `/api/sync/orion`, se autentica con `Authorization: Bearer
+$CRON_SECRET` y es idempotente: se puede disparar todas las veces que haga
+falta sin duplicar nada.
+
+Lo dispara **GitHub Actions** (`.github/workflows/sync-orion.yml`) cada 20
+minutos entre las 10 y las 23 de Argentina, y no un cron de Vercel: en el plan
+Hobby los cron jobs corren una vez por dia como maximo y, peor, un `crons` con
+mas frecuencia **hace fallar el deploy entero**. Si el proyecto pasa a Pro, se
+puede volver a `vercel.json` y borrar el workflow.
+
+Para que el workflow funcione, en GitHub > Settings > Secrets and variables >
+Actions:
+
+- Secret `CRON_SECRET`: el mismo valor que la variable de entorno en Vercel.
+- Variable `SYNC_URL`: `https://<dominio>/api/sync/orion`.
+
+A mano: pestaña Actions > Sync Orion > Run workflow, o el boton "Sincronizar
+ahora" de `/plataformas`, que hace exactamente lo mismo desde la UI.
+
 ## Reglas del proyecto
 
 - Toda mutacion pasa por una **server action** que valida con zod y re-verifica

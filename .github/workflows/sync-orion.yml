@@ -1,0 +1,42 @@
+# El sync de Orion lo dispara GitHub Actions y no un cron de Vercel: en el plan
+# Hobby los cron jobs corren una vez por dia como maximo, y con eso el listado
+# del dia llega tarde. El endpoint es el mismo que usaria Vercel y se
+# autentica igual, con el Bearer de CRON_SECRET.
+name: Sync Orion
+
+on:
+  schedule:
+    # GitHub Actions programa en UTC y Argentina es UTC-3: de 10 a 23 de aca
+    # son las 13-23 y 00-02 de UTC. Los horarios pueden correrse unos minutos,
+    # que para una corrida cada 20 no cambia nada.
+    #
+    # Los minutos son 7/27/47 y no 0/20/40 a proposito: en la hora redonda se
+    # amontonan los workflows de todo GitHub y las corridas salen con mas
+    # demora.
+    - cron: "7,27,47 13-23 * * *"
+    - cron: "7,27,47 0-2 * * *"
+  workflow_dispatch:
+
+# Si una corrida se solapa con la anterior, la nueva espera: el sync es
+# idempotente pero no tiene sentido pedirle a Orion dos veces lo mismo.
+concurrency:
+  group: sync-orion
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    # El job solo hace un GET a la app: no necesita ningun permiso sobre el
+    # repositorio, asi que el GITHUB_TOKEN sale sin alcance.
+    permissions: {}
+    steps:
+      - name: Pedir la sincronizacion
+        env:
+          SYNC_URL: ${{ vars.SYNC_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          # --fail-with-body: si contesta 401 o 502, la corrida queda en rojo
+          # con el motivo a la vista en vez de pasar en silencio.
+          curl --fail-with-body --silent --show-error --max-time 300 \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            "$SYNC_URL"

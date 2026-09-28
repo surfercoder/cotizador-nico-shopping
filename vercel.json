@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/sync/orion",
-      "schedule": "*/20 10-23 * * *"
-    }
-  ]
-}
