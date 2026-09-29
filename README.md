@@ -24,6 +24,35 @@ Como Supabase tiene confirmacion de email activada y el SMTP propio esta
 limitado, para el primer admin conviene crearlo desde el dashboard
 (Authentication > Users > Add user, con "Auto Confirm User").
 
+### Links de email en produccion
+
+Los mails de Supabase (confirmar cuenta, recuperar contrasena) vuelven a la app
+por `redirect_to`. Supabase lo ignora si no esta en su allowlist y en ese caso
+manda al Site URL, asi que las dos puntas tienen que apuntar al dominio publico:
+
+- Vercel: `NEXT_PUBLIC_SITE_URL=https://cotizador-nico-shopping.vercel.app` en
+  Production. Sin ella la URL sale del header `host`, que en una deploy URL
+  (`...-hash.vercel.app`) no coincide con la allowlist. Es `NEXT_PUBLIC_*`:
+  cambiarla exige redeploy.
+- Supabase > Authentication > URL Configuration: mismo valor en **Site URL** y
+  `https://cotizador-nico-shopping.vercel.app/**` en **Redirect URLs**. Sumale
+  `http://localhost:3000/**` si alguna vez das de alta en local: hoy no esta.
+
+Se verifica sin gastar un mail real; si la Location no es el dominio publico,
+la allowlist todavia esta mal:
+
+```bash
+source .env.local
+curl -sD - -o /dev/null "$NEXT_PUBLIC_SUPABASE_URL/auth/v1/verify?token=bogus&type=signup&redirect_to=https://cotizador-nico-shopping.vercel.app/auth/callback" | grep -i ^location
+```
+
+Pendiente: el link de confirmacion usa el flujo PKCE, asi que **solo se puede
+abrir en el mismo navegador que hizo el alta** (registrarse en la PC y abrir el
+mail en el celular falla). El callback ya soporta la alternativa portable
+(`token_hash`), pero cambiar las plantillas exige SMTP propio, que hoy no hay.
+Hasta entonces: avisar que abran el mail en la misma maquina, o crear la cuenta
+desde el dashboard con "Auto Confirm User" y habilitarla en `/usuarios`.
+
 ## Estructura
 
 ```
