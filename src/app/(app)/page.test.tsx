@@ -243,6 +243,8 @@ test("la fila muestra anio y VIN cuando el detalle ya los trajo", async () => {
   expect(within(conDetalle).getByText(/8AWDA45ZXKA123456/)).toBeInTheDocument()
   // Una fila de una plataforma que ya no esta activa no rompe la tabla.
   expect(screen.getByRole("cell", { name: "-" })).toBeInTheDocument()
+  // Sin hora de pedido el link al detalle sigue teniendo texto.
+  expect(screen.getByRole("link", { name: "Ver" })).toHaveAttribute("href", "/cotizaciones/b")
 })
 
 test("avisa cuando el tope de filas tapa cotizaciones", async () => {

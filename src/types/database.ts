@@ -187,6 +187,54 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_items: {
+        Row: {
+          catalog_id: string | null
+          currency: string
+          orion_repuesto_id: number
+          part_number: string | null
+          price: number | null
+          quote_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          catalog_id?: string | null
+          currency?: string
+          orion_repuesto_id: number
+          part_number?: string | null
+          price?: number | null
+          quote_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          catalog_id?: string | null
+          currency?: string
+          orion_repuesto_id?: number
+          part_number?: string | null
+          price?: number | null
+          quote_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_items_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "catalogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           anio: string | null

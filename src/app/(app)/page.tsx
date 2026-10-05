@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import { ButtonLink } from "@/components/button-link"
 import { Badge } from "@/components/ui/badge"
@@ -154,8 +155,14 @@ export default async function CotizacionesPage({
                   {/* La hora del pedido es con la que se cotejan las dos
                       grillas: es la columna por la que ordena el portal. */}
                   <TableCell className="text-sm">
-                    {cotizacion.fecha_pedido &&
-                      horaArgentina(cotizacion.fecha_pedido)}
+                    <Link
+                      href={`/cotizaciones/${cotizacion.id}`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {cotizacion.fecha_pedido
+                        ? horaArgentina(cotizacion.fecha_pedido)
+                        : "Ver"}
+                    </Link>
                     <div className="text-xs text-muted-foreground">
                       {cotizacion.estado}
                     </div>
